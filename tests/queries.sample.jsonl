@@ -1,0 +1,9 @@
+{"query": "متى يجوز للمؤجر طلب فسخ عقد الإيجار بسبب عدم دفع الأجرة؟", "relevant": [{"file": "law_rent_synthetic.pdf", "article": "4"}]}
+{"query": "هل يحق للمستأجر أن يؤجر الشقة لشخص آخر من الباطن؟", "relevant": [{"file": "law_rent_synthetic.pdf", "article": "5"}]}
+{"query": "ما هي نسبة الزيادة السنوية في الإيجار؟", "relevant": [{"file": "law_rent_synthetic.pdf", "article": "6"}]}
+{"query": "كم عدد ساعات العمل اليومية المسموح بها؟", "relevant": [{"file": "law_labor_synthetic.pdf", "article": "4"}]}
+{"query": "ما مدة الإجازة السنوية للعامل؟", "relevant": [{"file": "law_labor_synthetic.pdf", "article": "5"}]}
+{"query": "ما أقصى مدة لفترة الاختبار للموظف الجديد؟", "relevant": [{"file": "law_labor_synthetic.pdf", "article": "3"}]}
+{"query": "ما عقوبة مخالفة حظر التأجير من الباطن؟", "relevant": [{"file": "law_rent_synthetic.pdf", "article": "8"}, {"file": "law_rent_synthetic.pdf", "article": "5"}]}
+{"query": "ما البيانات التي يجب أن يتضمنها عقد الإيجار؟", "relevant": [{"text": "وأن يتضمن بيان العين المؤجرة"}]}
+{"query": "نص المادة 6 من قانون الإيجار", "relevant": [{"file": "law_rent_synthetic.pdf", "article": "6"}]}

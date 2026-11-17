@@ -1,0 +1,58 @@
+{
+  "model": "ollama:bge-m3",
+  "chunking": "fixed",
+  "chunk_scope": "page",
+  "chunk_size": 1000,
+  "chunk_overlap": 150,
+  "normalize": false,
+  "contextual_header": false,
+  "max_tokens": 8192,
+  "num_ctx": 8192,
+  "query_instruction": null,
+  "query_prefix": "",
+  "truncated_chunks": 0,
+  "chars_per_token": 3.229745582520713,
+  "extraction": [
+    {
+      "file": "01 - أوراق المحضرين.pdf",
+      "pages": 140,
+      "chars": 170060,
+      "articles_detected": 47,
+      "ocr_pages": 139,
+      "ocr_mean_conf": 86.8,
+      "page_numbers": {
+        "pages_with_number": 95,
+        "offset": 0,
+        "consistent": 0.032,
+        "bad_pages": [
+          3,
+          4,
+          6,
+          7,
+          9,
+          10,
+          12,
+          13,
+          14,
+          17,
+          18,
+          19,
+          21,
+          23,
+          24,
+          26,
+          27,
+          29,
+          32,
+          34
+        ]
+      },
+      "pages_ocr:tesseract": 139,
+      "pages_ocr_restored": 34,
+      "pages_ocr_blank": 2,
+      "pages_empty": 1
+    }
+  ],
+  "n_chunks": 254,
+  "dim": 1024
+}

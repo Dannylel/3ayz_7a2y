@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>تجربة المساعد القانوني</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>⚖</text></svg>">
+<style>
+  :root {
+    --bg: #f6f5f1; --panel: #ffffff; --ink: #1f2328; --muted: #6b7078; --line: #e3e1da;
+    --accent: #1d4e5f; --accent-soft: #e6eff1; --good: #2e7d4f; --warn: #b7791f; --bad: #b42318;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font: 16px/1.8 "Segoe UI", "Noto Naskh Arabic", "Noto Sans Arabic", Tahoma, "Arabic Typesetting", sans-serif;
+    display: flex; flex-direction: column;
+  }
+  header {
+    background: var(--panel); border-bottom: 1px solid var(--line);
+    padding: 10px 20px; display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center;
+  }
+  header h1 { font-size: 18px; margin: 0; color: var(--accent); }
+  header .info { color: var(--muted); font-size: 13px; }
+  .tabs { display: flex; gap: 4px; margin-inline-start: auto; }
+  .tabs button {
+    border: 1px solid var(--line); background: var(--bg); padding: 6px 16px; border-radius: 8px;
+    font: inherit; font-size: 14px; cursor: pointer; color: var(--ink);
+  }
+  .tabs button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .settings { display: flex; gap: 14px; align-items: center; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
+  .settings select, .settings input[type=number] {
+    font: inherit; font-size: 13px; padding: 3px 6px; border: 1px solid var(--line); border-radius: 6px; background: #fff;
+  }
+  .settings input[type=number] { width: 56px; }
+
+  main { flex: 1; overflow: hidden; display: flex; }
+  .view { flex: 1; display: none; flex-direction: column; max-width: 1000px; margin: 0 auto; width: 100%; }
+  .view.on { display: flex; }
+  .scroll { flex: 1; overflow-y: auto; padding: 20px; }
+
+  .msg { margin-bottom: 22px; }
+  .msg.user .bubble {
+    background: var(--accent); color: #fff; display: inline-block; padding: 8px 14px;
+    border-radius: var(--radius); max-width: 85%; white-space: pre-wrap;
+  }
+  .msg.user { text-align: start; }
+  .msg.bot .bubble {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 16px;
+  }
+  .answer { white-space: pre-wrap; unicode-bidi: plaintext; }
+  .answer .cite {
+    display: inline-block; background: var(--accent-soft); color: var(--accent); border-radius: 5px;
+    padding: 0 6px; margin: 0 1px; font-size: 13px; font-weight: 600; cursor: pointer; line-height: 1.6;
+  }
+  .answer .cite:hover { background: var(--accent); color: #fff; }
+  .typing::after { content: "▍"; animation: blink 1s steps(1) infinite; color: var(--muted); }
+  @keyframes blink { 50% { opacity: 0; } }
+  .meta-row { display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+  .btn {
+    border: 1px solid var(--line); background: #fff; border-radius: 6px; padding: 2px 10px;
+    font: inherit; font-size: 13px; cursor: pointer; color: var(--ink);
+  }
+  .btn:hover { border-color: var(--accent); }
+  .btn.sel-good { background: #e7f4ec; border-color: var(--good); color: var(--good); }
+  .btn.sel-bad { background: #fbeceb; border-color: var(--bad); color: var(--bad); }
+  details.sources { margin-top: 10px; }
+  details.sources > summary { cursor: pointer; color: var(--accent); font-size: 14px; }
+
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 10px 14px; margin-top: 10px; transition: box-shadow .2s, border-color .2s;
+  }
+  .card.flash { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .card .head { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+  .card .num {
+    background: var(--accent); color: #fff; border-radius: 5px; padding: 0 7px; font-weight: 600;
+  }
+  .badge { border-radius: 5px; padding: 0 6px; font-size: 12px; border: 1px solid currentColor; }
+  .conf-hi { color: var(--good); } .conf-mid { color: var(--warn); } .conf-lo { color: var(--bad); }
+  .card .text {
+    white-space: pre-wrap; unicode-bidi: plaintext; margin-top: 6px; font-size: 15px;
+    max-height: 9.5em; overflow: hidden; position: relative;
+  }
+  .card .text.open { max-height: none; }
+  .card .actions { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; align-items: center; }
+  .score { font-variant-numeric: tabular-nums; }
+  body.noscores .score { display: none; }
+
+  .composer { border-top: 1px solid var(--line); background: var(--panel); padding: 12px 20px; display: flex; gap: 10px; }
+  .composer textarea {
+    flex: 1; resize: none; font: inherit; padding: 8px 12px; border: 1px solid var(--line);
+    border-radius: var(--radius); min-height: 46px; max-height: 160px;
+  }
+  .composer textarea:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+  .primary {
+    background: var(--accent); color: #fff; border: 0; border-radius: var(--radius); padding: 0 22px;
+    font: inherit; cursor: pointer;
+  }
+  .primary:disabled { opacity: .5; cursor: default; }
+  .hint { color: var(--muted); font-size: 13px; text-align: center; margin-top: 40px; line-height: 2; }
+  .error { color: var(--bad); }
+
+  .modal { position: fixed; inset: 0; background: rgba(20,24,28,.6); display: none; z-index: 10; padding: 3vh 3vw; }
+  .modal.on { display: flex; }
+  .modal .box {
+    background: var(--panel); border-radius: var(--radius); flex: 1; display: grid;
+    grid-template-columns: 1.1fr 1fr; overflow: hidden; position: relative;
+  }
+  .modal .img { overflow: auto; background: #ddd; display: flex; justify-content: center; align-items: flex-start; }
+  .modal .img img { max-width: 100%; background: #fff; }
+  .modal .side { overflow: auto; padding: 16px 18px; border-inline-start: 1px solid var(--line); }
+  .modal .side pre { white-space: pre-wrap; unicode-bidi: plaintext; font: inherit; font-size: 15px; }
+  .modal .close { position: absolute; top: 8px; left: 10px; z-index: 2; }
+  .pager { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; font-size: 13px; color: var(--muted); }
+  @media (max-width: 800px) { .modal .box { grid-template-columns: 1fr; grid-template-rows: 60% 40%; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>تجربة المساعد القانوني</h1>
+  <span class="info" id="info">جارٍ التحميل…</span>
+  <div class="settings">
+    <label>النموذج <select id="llm"></select></label>
+    <label>عدد المقتطفات <input type="number" id="k" min="1" max="20" value="5"></label>
+    <label><input type="checkbox" id="showScores" checked> إظهار الدرجات</label>
+  </div>
+  <div class="tabs">
+    <button id="tabChat" class="on">محادثة</button>
+    <button id="tabSearch">بحث فقط</button>
+  </div>
+</header>
+
+<main>
+  <section class="view on" id="viewChat">
+    <div class="scroll" id="chatLog">
+      <div class="hint" id="chatHint">
+        اكتب سؤالًا قانونيًا وسيجيب النموذج اعتمادًا على المقتطفات المسترجعة من المستندات فقط، مع ذكر المصادر.<br>
+        اضغط على رقم المصدر مثل <b>[1]</b> للانتقال إليه، وعلى «الصفحة الأصلية» لمقارنة النص بالصفحة الممسوحة.<br>
+        ساعدنا في التقييم: 👍/👎 للإجابة، و«مفيد / غير مفيد» لكل مصدر.
+      </div>
+    </div>
+    <form class="composer" id="chatForm">
+      <textarea id="chatInput" rows="1" placeholder="اكتب سؤالك هنا… (Enter للإرسال، Shift+Enter لسطر جديد)"></textarea>
+      <button class="primary" id="chatSend">إرسال</button>
+    </form>
+  </section>
+
+  <section class="view" id="viewSearch">
+    <form class="composer" id="searchForm" style="border-top:0;border-bottom:1px solid var(--line)">
+      <textarea id="searchInput" rows="1" placeholder="ابحث في المستندات… (بدون إجابة من النموذج، المقتطفات فقط)"></textarea>
+      <button class="primary" id="searchSend">بحث</button>
+    </form>
+    <div class="scroll" id="searchLog">
+      <div class="hint">يعرض هذا الوضع المقتطفات المسترجعة فقط، لاختبار جودة الاسترجاع بمعزل عن النموذج اللغوي.</div>
+    </div>
+  </section>
+</main>
+
+<div class="modal" id="modal">
+  <div class="box">
+    <button class="btn close" id="modalClose">✕ إغلاق</button>
+    <div class="img"><img id="modalImg" alt="الصفحة الأصلية"></div>
+    <div class="side">
+      <div class="pager" id="pager"></div>
+      <pre id="modalText"></pre>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const AR = (n) => String(n).replace(/\d/g, (d) => "٠١٢٣٤٥٦٧٨٩"[d]);
+let INFO = null;
+const history = [];
+
+async function api(path, body) {
+  const r = await fetch(path, body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {});
+  const j = await r.json();
+  if (!r.ok || j.error) throw new Error(j.error || r.statusText);
+  return j;
+}
+
+async function init() {
+  try {
+    INFO = await api("/api/info");
+    $("#info").textContent = `${INFO.files.join("، ")} · ${AR(INFO.chunks)} مقطع · ${INFO.embed_model}` + (INFO.rerank ? " · مع إعادة ترتيب" : "");
+    $("#llm").innerHTML = INFO.llms.map((m) => `<option ${m === INFO.llm ? "selected" : ""}>${esc(m)}</option>`).join("");
+    $("#k").value = INFO.k;
+  } catch (e) {
+    $("#info").innerHTML = `<span class="error">تعذّر الاتصال بالخادم: ${esc(e.message)}</span>`;
+  }
+}
+
+// ---------- tabs & settings
+function tab(which) {
+  $("#tabChat").classList.toggle("on", which === "chat");
+  $("#tabSearch").classList.toggle("on", which === "search");
+  $("#viewChat").classList.toggle("on", which === "chat");
+  $("#viewSearch").classList.toggle("on", which === "search");
+  (which === "chat" ? $("#chatInput") : $("#searchInput")).focus();
+}
+$("#tabChat").onclick = () => tab("chat");
+$("#tabSearch").onclick = () => tab("search");
+$("#showScores").onchange = (e) => document.body.classList.toggle("noscores", !e.target.checked);
+for (const ta of [$("#chatInput"), $("#searchInput")]) {
+  ta.addEventListener("input", () => { ta.style.height = "auto"; ta.style.height = Math.min(ta.scrollHeight, 160) + "px"; });
+  ta.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ta.form.requestSubmit(); } });
+}
+
+// ---------- source cards
+function confClass(c) { return c == null ? "" : c >= 80 ? "conf-hi" : c >= 65 ? "conf-mid" : "conf-lo"; }
+
+function sourceCard(s, question, uid) {
+  const el = document.createElement("div");
+  el.className = "card";
+  el.id = `src-${uid}-${s.rank}`;
+  const pages = s.pages.map(AR).join("، ");
+  el.innerHTML = `
+    <div class="head">
+      <span class="num">${AR(s.rank)}</span>
+      <span>${esc(s.file)}</span><span title="رقم الصفحة في ملف PDF، وقد يختلف عن الرقم المطبوع على الصفحة">صفحة PDF ${pages}</span>
+      ${s.section_type ? `<span class="badge">${esc(s.section_type)}</span>` : ""}
+      ${s.ocr_conf != null ? `<span class="badge ${confClass(s.ocr_conf)}" title="ثقة التعرف الضوئي على الحروف لهذه الصفحة">OCR ${AR(Math.round(s.ocr_conf))}٪</span>` : ""}
+      <span class="score">الدرجة ${s.score.toFixed(3)}</span>
+    </div>
+    <div class="text">${esc(s.text)}</div>
+    <div class="actions">
+      <button class="btn more">عرض الكل</button>
+      ${s.page_image ? `<button class="btn page">الصفحة الأصلية</button>` : ""}
+      <span style="margin-inline-start:auto"></span>
+      <button class="btn rel-yes">مفيد ✓</button>
+      <button class="btn rel-no">غير مفيد ✗</button>
+    </div>`;
+  const text = el.querySelector(".text");
+  el.querySelector(".more").onclick = (e) => { text.classList.toggle("open"); e.target.textContent = text.classList.contains("open") ? "طيّ" : "عرض الكل"; };
+  if (s.page_image) el.querySelector(".page").onclick = () => openPage(s);
+  const yes = el.querySelector(".rel-yes"), no = el.querySelector(".rel-no");
+  const mark = (rel) => {
+    yes.classList.toggle("sel-good", rel); no.classList.toggle("sel-bad", !rel);
+    api("/api/feedback", { kind: "source", question, chunk_id: s.id, relevant: rel }).catch(() => {});
+  };
+  yes.onclick = () => mark(true);
+  no.onclick = () => mark(false);
+  return el;
+}
+
+// ---------- original page modal
+function openPage(s) {
+  let i = 0;
+  const show = () => {
+    const p = s.pages[i];
+    $("#modalImg").src = `/api/page?file=${encodeURIComponent(s.file)}&page=${p}`;
+    $("#pager").innerHTML = `${esc(s.file)} — صفحة ${AR(p)} في ملف PDF (قد يختلف عن الرقم المطبوع)` +
+      (s.pages.length > 1 ? ` &nbsp; <button class="btn" id="pgPrev">السابقة</button><button class="btn" id="pgNext">التالية</button>` : "");
+    if (s.pages.length > 1) {
+      $("#pgPrev").onclick = () => { i = (i - 1 + s.pages.length) % s.pages.length; show(); };
+      $("#pgNext").onclick = () => { i = (i + 1) % s.pages.length; show(); };
+    }
+  };
+  $("#modalText").textContent = s.text;
+  show();
+  $("#modal").classList.add("on");
+}
+$("#modalClose").onclick = () => $("#modal").classList.remove("on");
+$("#modal").onclick = (e) => { if (e.target.id === "modal") $("#modal").classList.remove("on"); };
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") $("#modal").classList.remove("on"); });
+
+// ---------- chat
+function renderAnswer(text, uid) {
+  return esc(text)
+    .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
+    // [1]  [١]  [1، 2]  [1, 3]  -> one clickable chip per number
+    .replace(/\[([\d٠-٩]{1,2}(?:\s*[،,]\s*[\d٠-٩]{1,2})*)\]/g, (m, list) =>
+      list.split(/\s*[،,]\s*/).map((n) => {
+        const w = n.replace(/[٠-٩]/g, (d) => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
+        return `<span class="cite" data-target="src-${uid}-${+w}">${AR(+w)}</span>`;
+      }).join(""));
+}
+
+$("#chatForm").onsubmit = async (e) => {
+  e.preventDefault();
+  const q = $("#chatInput").value.trim();
+  if (!q) return;
+  $("#chatHint")?.remove();
+  $("#chatInput").value = ""; $("#chatInput").style.height = "auto";
+  $("#chatSend").disabled = true;
+  const uid = Date.now();
+  const log = $("#chatLog");
+  log.insertAdjacentHTML("beforeend", `<div class="msg user"><div class="bubble">${esc(q)}</div></div>`);
+  const bot = document.createElement("div");
+  bot.className = "msg bot";
+  bot.innerHTML = `<div class="bubble"><div class="answer typing"></div>
+    <div class="meta-row"></div><details class="sources" open><summary>المصادر</summary><div class="list"></div></details></div>`;
+  log.appendChild(bot);
+  log.scrollTop = log.scrollHeight;
+  const ans = bot.querySelector(".answer"), list = bot.querySelector(".list"), meta = bot.querySelector(".meta-row");
+  const llm = $("#llm").value;
+  let full = "", t0 = performance.now();
+
+  ans.addEventListener("click", (ev) => {
+    const t = ev.target.closest(".cite");
+    if (!t) return;
+    const card = document.getElementById(t.dataset.target);
+    if (card) { bot.querySelector("details").open = true; card.scrollIntoView({ behavior: "smooth", block: "center" }); card.classList.add("flash"); setTimeout(() => card.classList.remove("flash"), 1500); }
+  });
+
+  try {
+    const r = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question: q, history, k: +$("#k").value, llm }) });
+    if (!r.ok) throw new Error((await r.text()) || r.statusText);
+    const reader = r.body.getReader(), dec = new TextDecoder();
+    let buf = "";
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      let cut;
+      while ((cut = buf.indexOf("\n\n")) >= 0) {
+        const line = buf.slice(0, cut); buf = buf.slice(cut + 2);
+        if (!line.startsWith("data: ")) continue;
+        const ev = JSON.parse(line.slice(6));
+        if (ev.type === "sources") {
+          bot.querySelector("summary").textContent = `المصادر (${AR(ev.sources.length)})`;
+          ev.sources.forEach((s) => list.appendChild(sourceCard(s, q, uid)));
+        } else if (ev.type === "token") {
+          full += ev.text;
+          ans.innerHTML = renderAnswer(full, uid);
+          if (log.scrollHeight - log.scrollTop - log.clientHeight < 200) log.scrollTop = log.scrollHeight;
+        } else if (ev.type === "error") {
+          throw new Error(ev.error);
+        }
+      }
+    }
+  } catch (err) {
+    ans.insertAdjacentHTML("beforeend", `<div class="error">حدث خطأ: ${esc(err.message)}</div>`);
+  }
+  ans.classList.remove("typing");
+  $("#chatSend").disabled = false;
+  history.push({ role: "user", content: q }, { role: "assistant", content: full });
+
+  const secs = ((performance.now() - t0) / 1000).toFixed(1);
+  meta.innerHTML = `<span>${esc(llm)} · ${AR(secs)} ث</span>
+    <button class="btn good">👍 إجابة جيدة</button><button class="btn bad">👎 إجابة غير دقيقة</button>
+    <input class="btn comment" placeholder="ملاحظة (اختياري)" style="min-width:200px">`;
+  const send = (rating) => {
+    meta.querySelector(".good").classList.toggle("sel-good", rating === 1);
+    meta.querySelector(".bad").classList.toggle("sel-bad", rating === -1);
+    api("/api/feedback", { kind: "answer", question: q, answer: full, rating, llm, comment: meta.querySelector(".comment").value }).catch(() => {});
+  };
+  meta.querySelector(".good").onclick = () => send(1);
+  meta.querySelector(".bad").onclick = () => send(-1);
+  meta.querySelector(".comment").addEventListener("change", (ev) =>
+    api("/api/feedback", { kind: "comment", question: q, answer: full, comment: ev.target.value, llm }).catch(() => {}));
+  $("#chatInput").focus();
+};
+
+// ---------- search only
+$("#searchForm").onsubmit = async (e) => {
+  e.preventDefault();
+  const q = $("#searchInput").value.trim();
+  if (!q) return;
+  const log = $("#searchLog");
+  $("#searchSend").disabled = true;
+  log.innerHTML = `<div class="hint">جارٍ البحث…</div>`;
+  try {
+    const j = await api("/api/search", { query: q, k: +$("#k").value });
+    const uid = Date.now();
+    log.innerHTML = `<div class="hint" style="margin:0 0 6px;text-align:start">${AR(j.results.length)} نتائج · ${AR(j.ms)} مللي ثانية — «${esc(q)}»</div>`;
+    j.results.forEach((s) => log.appendChild(sourceCard(s, q, uid)));
+  } catch (err) {
+    log.innerHTML = `<div class="hint error">حدث خطأ: ${esc(err.message)}</div>`;
+  }
+  $("#searchSend").disabled = false;
+};
+
+init();
+$("#chatInput").focus();
+</script>
+</body>
+</html>

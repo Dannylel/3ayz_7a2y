@@ -1,0 +1,17 @@
+numpy
+pymupdf>=1.24
+pypdfium2          # fallback PDF reader if PyMuPDF is blocked/unavailable
+pypdf              # last-resort PDF reader (pure Python)
+pillow             # page images for pypdf
+opencv-python-headless
+rapidfuzz
+scikit-learn
+umap-learn
+plotly
+# OCR also needs the Tesseract program with Arabic data (not a pip package): see README step 1.
+# optional: only for Hugging Face models (--model BAAI/bge-m3, --rerank st:...)
+# sentence-transformers>=3.0
+# only for tests/make_sample_pdfs.py
+reportlab
+arabic-reshaper
+python-bidi
